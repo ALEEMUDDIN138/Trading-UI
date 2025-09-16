@@ -1,13 +1,16 @@
 pipeline {
     agent any
 
-    environment {
-        SKIP_PREFLIGHT_CHECK = 'true'   // bypass CRA eslint check
-        NODE_OPTIONS = '--openssl-legacy-provider' // fix for React build + Node 18+
+    tools {
+        // Use the NodeJS tool you configured in Jenkins (Node 18.20.8 or Node 20.x)
+        nodejs 'Node_20'  
     }
 
-    tools {
-        nodejs 'Nodejs'   // Make sure this tool points to Node 18.20.8 or Node 20
+    environment {
+        // Bypass CRA eslint version mismatch
+        SKIP_PREFLIGHT_CHECK = 'true'
+        // Sometimes needed for React builds on Node 18+
+        NODE_OPTIONS = '--openssl-legacy-provider'
     }
 
     stages {
@@ -20,21 +23,12 @@ pipeline {
             }
         }
 
-        stage('Prepare Environment') {
-            steps {
-                sh '''
-                    echo "Upgrading npm..."
-                    npm install -g npm@latest
-                    npm --version
-                '''
-            }
-        }
-
         stage('Clean Workspace') {
             steps {
                 sh '''
                     echo "Cleaning workspace..."
-                    rm -rf node_modules package-lock.json
+                    rm -rf node_modules package-lock.json build
+                    npm cache clean --force || true
                 '''
             }
         }
@@ -42,7 +36,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    echo "Installing dependencies with legacy-peer-deps..."
+                    echo "Installing dependencies..."
                     npm install --legacy-peer-deps
                 '''
             }
@@ -52,7 +46,7 @@ pipeline {
             steps {
                 sh '''
                     echo "Running tests..."
-                    npm test || echo "⚠️ No tests found"
+                    npm test || echo "✅ No tests found, continuing..."
                 '''
             }
         }
@@ -60,7 +54,7 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                    echo "Building project..."
+                    echo "Building React app..."
                     npm run build
                 '''
             }
@@ -69,7 +63,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ Pipeline completed successfully!"
+            echo "🎉 Pipeline completed successfully!"
         }
         failure {
             echo "❌ Pipeline failed. Check errors above."

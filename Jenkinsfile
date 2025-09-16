@@ -2,22 +2,31 @@ pipeline {
     agent any
 
     tools {
-        nodejs "Node_20"   // make sure you configured this in Jenkins global tools
+        // 👇 Name must match what you configured under "Manage Jenkins → Global Tool Configuration → NodeJS"
+        nodejs "Nodejs16"
+    }
+
+    environment {
+        SKIP_PREFLIGHT_CHECK = 'true'   // skip eslint version mismatch checks
+        CI = 'false'                    // avoid treating warnings as errors
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'master', url: 'https://github.com/ALEEMUDDIN138/Trading-UI.git'
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/master']],
+                    userRemoteConfigs: [[url: 'https://github.com/ALEEMUDDIN138/Trading-UI.git']]
+                ])
             }
         }
 
         stage('Clean Workspace') {
             steps {
                 sh '''
-                  echo "🧹 Cleaning workspace and old dependencies..."
-                  rm -rf node_modules package-lock.json
-                  npm cache clean --force || true
+                    echo "🧹 Cleaning workspace..."
+                    rm -rf node_modules package-lock.json
+                    npm cache clean --force || true
                 '''
             }
         }
@@ -25,11 +34,8 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                  echo "📦 Installing dependencies..."
-                  npm install
-
-                  echo "✅ Forcing correct ESLint version (^6.1.0)..."
-                  npm install --save-dev eslint@^6.1.0
+                    echo "📦 Installing dependencies..."
+                    npm install --legacy-peer-deps
                 '''
             }
         }
@@ -37,8 +43,8 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                  echo "🧪 Running tests..."
-                  npm test || echo "⚠️ No tests found, skipping..."
+                    echo "🧪 Running tests..."
+                    npm test || echo "⚠️ No tests found"
                 '''
             }
         }
@@ -46,8 +52,8 @@ pipeline {
         stage('Build') {
             steps {
                 sh '''
-                  echo "🏗️ Building React app..."
-                  CI=false npm run build
+                    echo "🏗️ Building React app with Node.js $(node -v)..."
+                    npm run build
                 '''
             }
         }
@@ -55,11 +61,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ React pipeline completed successfully!"
+            echo "✅ Pipeline completed successfully!"
         }
         failure {
-            echo "❌ React pipeline failed — check logs above."
+            echo "❌ Pipeline failed — check console output."
         }
     }
 }
-

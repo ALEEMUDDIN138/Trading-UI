@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     tools {
-        nodejs "Nodejs18.20.8"   // make sure NodeJS 18.20.8 is configured in Jenkins
+        nodejs "Node_20"   // make sure NodeJS 18.20.8 is configured in Jenkins
     }
 
     options {

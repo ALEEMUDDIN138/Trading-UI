@@ -28,8 +28,8 @@ pipeline {
                   echo "📦 Installing dependencies..."
                   npm install
 
-                  echo "✅ Forcing correct ESLint version (^6.1.0)..."
-                  npm install --save-dev eslint@^6.1.0
+                  echo "✅ Forcing correct ESLint version (^10.8.2)..."
+                  npm install --save-dev eslint@^10.8.2
                 '''
             }
         }

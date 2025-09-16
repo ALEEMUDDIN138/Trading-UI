@@ -2,34 +2,34 @@ pipeline {
     agent any
 
     tools {
-        nodejs "Node_20"   // make sure NodeJS 18.20.8 is configured in Jenkins
-    }
-
-    options {
-        skipDefaultCheckout(true)   // control checkout manually
+        nodejs "Node_20"   // make sure you configured this in Jenkins global tools
     }
 
     stages {
-        stage('Clean Workspace') {
-            steps {
-                deleteDir()   // clean Jenkins workspace
-            }
-        }
-
         stage('Checkout') {
             steps {
                 git branch: 'master', url: 'https://github.com/ALEEMUDDIN138/Trading-UI.git'
             }
         }
 
+        stage('Clean Workspace') {
+            steps {
+                sh '''
+                  echo "🧹 Cleaning workspace and old dependencies..."
+                  rm -rf node_modules package-lock.json
+                  npm cache clean --force || true
+                '''
+            }
+        }
+
         stage('Install Dependencies') {
             steps {
                 sh '''
-                  echo "🧹 Cleaning old dependencies..."
-                  rm -rf node_modules package-lock.json
-                  
-                  echo "📦 Installing fresh dependencies..."
+                  echo "📦 Installing dependencies..."
                   npm install
+
+                  echo "✅ Forcing correct ESLint version (^6.1.0)..."
+                  npm install --save-dev eslint@^6.1.0
                 '''
             }
         }
@@ -38,7 +38,7 @@ pipeline {
             steps {
                 sh '''
                   echo "🧪 Running tests..."
-                  npm test || echo ":warning: No tests found"
+                  npm test || echo "⚠️ No tests found, skipping..."
                 '''
             }
         }
@@ -55,10 +55,11 @@ pipeline {
 
     post {
         success {
-            echo "✅ Node.js React pipeline completed successfully!"
+            echo "✅ React pipeline completed successfully!"
         }
         failure {
-            echo "❌ Pipeline failed — check console output."
+            echo "❌ React pipeline failed — check logs above."
         }
     }
 }
+
